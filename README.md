@@ -1,36 +1,189 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Система учета финансов
 
-## Getting Started
+Полнофункциональная система учета финансов с современным интерфейсом, разработанная на Next.js 16 с TypeScript и Tailwind CSS.
 
-First, run the development server:
+## Основные возможности
 
+### 💰 Управление доходами и расходами
+- **Доходы**: Добавление доходов с указанием источника, суммы, даты и описания
+- **Расходы**: Учет расходов по категориям с детальной информацией
+- **Категории**: Создание и управление категориями расходов
+- **Источники дохода**: Управление источниками доходов
+
+### 📊 Дашборд и аналитика
+- Общая статистика по доходам и расходам
+- Баланс за выбранный период
+- Расходы по категориям с визуализацией
+- Анализ доходов по источникам
+
+### 🏦 Управление депозитами
+- **Калькулятор вкладов**: Расчет процентов по депозитам с учетом капитализации
+- **Создание депозитов**: Управление несколькими депозитами
+- **Автоматические начисления**: Система автоматического начисления процентов
+- **Гибкие настройки**: Различные варианты капитализации (ежемесячно, ежеквартально, ежегодно)
+
+### 📱 Распознавание чеков
+- **Сканирование QR-кодов**: Распознавание чеков через камеру устройства
+- **Ручной ввод**: Возможность ввести QR-код вручную
+- **Автоматическая категоризация**: Автоматическое определение категории расходов
+- **Поддержка формата ФНС**: Парсинг российских чеков
+
+### 📤 Экспорт данных
+- Экспорт доходов в CSV
+- Экспорт расходов в CSV
+- Экспорт всех данных в JSON
+
+## Технологии
+
+- **Next.js 16** - React фреймворк с App Router
+- **TypeScript** - Типизация
+- **Prisma** - ORM для работы с базой данных
+- **SQLite** - База данных
+- **Tailwind CSS** - Стилизация
+- **Recharts** - Визуализация данных
+- **html5-qrcode** - Распознавание QR-кодов
+- **Lucide React** - Иконки
+
+## Установка и запуск
+
+### Требования
+- Node.js 18+ 
+- npm или yarn
+
+### Установка зависимостей
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Настройка базы данных
+```bash
+# Генерация Prisma Client
+npx prisma generate
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+# Создание базы данных и таблиц
+npx prisma db push
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Запуск в режиме разработки
+```bash
+npm run dev
+```
 
-## Learn More
+Приложение будет доступно по адресу [http://localhost:3000](http://localhost:3000)
 
-To learn more about Next.js, take a look at the following resources:
+### Сборка для production
+```bash
+npm run build
+npm start
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Автоматическое начисление процентов
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Система поддерживает автоматическое начисление процентов по депозитам. Для настройки автоматических начислений:
 
-## Deploy on Vercel
+### Вариант 1: API Endpoint (рекомендуется)
+Создайте cron job, который будет вызывать API endpoint:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```bash
+# В production используйте секретный ключ
+curl -X POST http://your-domain.com/api/cron/accrue \
+  -H "Authorization: Bearer YOUR_SECRET_KEY"
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### Вариант 2: Локальный скрипт
+Запускайте скрипт через cron:
+
+```bash
+# Установите ts-node для запуска TypeScript файлов
+npm install -g ts-node
+
+# Добавьте в crontab (например, раз в день в полночь)
+0 0 * * * cd /path/to/finance-tracker && npx ts-node scripts/accrue-deposits.ts
+```
+
+### Настройка секретного ключа
+Создайте файл `.env` в корне проекта:
+
+```env
+DATABASE_URL="file:./dev.db"
+CRON_SECRET="your-secret-key-here"
+```
+
+## Структура проекта
+
+```
+finance-tracker/
+├── app/
+│   ├── api/              # API endpoints
+│   │   ├── incomes/      # Управление доходами
+│   │   ├── expenses/     # Управление расходами
+│   │   ├── deposits/     # Управление депозитами
+│   │   ├── categories/   # Категории расходов
+│   │   ├── sources/      # Источники дохода
+│   │   ├── receipts/     # Обработка чеков
+│   │   ├── stats/        # Статистика
+│   │   ├── export/       # Экспорт данных
+│   │   └── cron/         # Автоматические задачи
+│   ├── components/       # React компоненты
+│   │   ├── forms/        # Формы ввода
+│   │   ├── dashboard/    # Компоненты дашборда
+│   │   ├── deposits/     # Компоненты депозитов
+│   │   └── receipts/     # Компоненты чеков
+│   ├── layout.tsx        # Основной layout
+│   └── page.tsx          # Главная страница
+├── lib/
+│   └── prisma.ts         # Prisma Client
+├── prisma/
+│   └── schema.prisma     # Схема базы данных
+├── scripts/
+│   └── accrue-deposits.ts # Скрипт автоматических начислений
+└── README.md
+```
+
+## Основные функции API
+
+### Доходы
+- `GET /api/incomes` - Получить все доходы
+- `POST /api/incomes` - Создать доход
+
+### Расходы
+- `GET /api/expenses` - Получить все расходы
+- `POST /api/expenses` - Создать расход
+
+### Депозиты
+- `GET /api/deposits` - Получить все депозиты
+- `POST /api/deposits` - Создать депозит
+- `PUT /api/deposits` - Рассчитать депозит
+- `POST /api/deposits/[id]/accrue` - Начислить проценты вручную
+
+### Чеки
+- `POST /api/receipts/parse` - Распознать чек по QR-коду
+
+### Статистика
+- `GET /api/stats?period=month` - Получить статистику за период
+
+### Экспорт
+- `GET /api/export?type=incomes` - Экспорт доходов в CSV
+- `GET /api/export?type=expenses` - Экспорт расходов в CSV
+- `GET /api/export?type=all` - Экспорт всех данных в JSON
+
+## Возможности для расширения
+
+Система легко расширяется следующими функциями:
+
+- 📈 **Визуализация**: Графики и диаграммы расходов/доходов
+- 🔔 **Уведомления**: Напоминания о важных финансовых событиях
+- 💳 **Множественные валюты**: Поддержка разных валют
+- 📱 **Мобильное приложение**: PWA версия
+- 🤖 **ИИ категоризация**: Более умное определение категорий расходов
+- 📊 **Прогнозирование**: Прогноз финансов на основе истории
+- 🔐 **Аутентификация**: Многопользовательский режим
+- 📧 **Email отчеты**: Еженедельные/месячные отчеты на email
+
+## Лицензия
+
+MIT
+
+## Автор
+
+Создано для Buildin AI
