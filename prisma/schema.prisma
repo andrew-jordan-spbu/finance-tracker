@@ -137,6 +137,58 @@ model Transfer {
   updatedAt   DateTime @updatedAt
 }
 
+// События календаря
+model CalendarEvent {
+  id              String   @id @default(cuid())
+  title           String
+  start           DateTime
+  end             DateTime?
+  location        String?
+  recurrence      String?  // none, daily, weekly, monthly, yearly, custom
+  reminderMinutes Int?
+  knowledgeLink   String?
+  dataLink        String?
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+// База знаний: заметки
+model Note {
+  id          String      @id @default(cuid())
+  title       String
+  content     String
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  assets      Asset[]
+  outgoing    NoteLink[]  @relation("OutgoingLinks")
+  incoming    NoteLink[]  @relation("IncomingLinks")
+}
+
+// Связи между заметками (граф)
+model NoteLink {
+  id        String @id @default(cuid())
+  sourceId  String
+  targetId  String
+  type      String @default("reference") // reference, relates, duplicate, child, etc.
+  createdAt DateTime @default(now())
+
+  source    Note   @relation("OutgoingLinks", fields: [sourceId], references: [id], onDelete: Cascade)
+  target    Note   @relation("IncomingLinks", fields: [targetId], references: [id], onDelete: Cascade)
+}
+
+// Файлы/ресурсы, привязанные к заметкам
+model Asset {
+  id        String   @id @default(cuid())
+  noteId    String?
+  note      Note?    @relation(fields: [noteId], references: [id], onDelete: SetNull)
+  filename  String
+  mimeType  String?
+  size      Int?
+  url       String   // относительный путь /uploads/...
+  createdAt DateTime @default(now())
+}
+
 // Бюджеты
 model Budget {
   id          String   @id @default(cuid())

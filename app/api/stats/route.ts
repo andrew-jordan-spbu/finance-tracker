@@ -117,6 +117,48 @@ export async function GET(request: NextRequest) {
       sourceDetails = []
     }
     
+    let bankBalances: Array<{ id: string; name: string; color?: string | null; balance: number }> = []
+    try {
+      const [banks, incomeByBank, expenseByBank] = await Promise.all([
+        prisma.bank.findMany({
+          select: {
+            id: true,
+            name: true,
+            color: true,
+          },
+        }),
+        prisma.income.groupBy({
+          by: ['bankId'],
+          _sum: {
+            amount: true,
+          },
+        }),
+        prisma.expense.groupBy({
+          by: ['bankId'],
+          _sum: {
+            amount: true,
+          },
+        }),
+      ])
+
+      const incomeMap = new Map<string, number>(
+        incomeByBank.map((item) => [item.bankId, item._sum.amount || 0])
+      )
+      const expenseMap = new Map<string, number>(
+        expenseByBank.map((item) => [item.bankId, item._sum.amount || 0])
+      )
+
+      bankBalances = banks.map((bank) => ({
+        id: bank.id,
+        name: bank.name,
+        color: bank.color,
+        balance: (incomeMap.get(bank.id) || 0) - (expenseMap.get(bank.id) || 0),
+      }))
+    } catch (err) {
+      console.warn('Failed to calculate bank balances:', err)
+      bankBalances = []
+    }
+
     return NextResponse.json({
       period,
       summary: {
@@ -127,6 +169,7 @@ export async function GET(request: NextRequest) {
       },
       expensesByCategory: Object.values(expensesByCategory),
       incomesBySource: sourceDetails,
+      bankBalances,
       trends: {
         // Можно добавить тренды по месяцам
       },
