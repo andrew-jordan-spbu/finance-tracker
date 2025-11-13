@@ -1,0 +1,151 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Категории расходов
+model Category {
+  id          String   @id @default(cuid())
+  name        String
+  color       String?  @default("#3b82f6")
+  icon        String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  expenses    Expense[]
+  budgets     Budget[]
+  
+  @@unique([name])
+}
+
+// Банки
+model Bank {
+  id          String   @id @default(cuid())
+  name        String
+  color       String?  @default("#3b82f6")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  incomes     Income[]
+  expenses    Expense[]
+  transfersFrom Transfer[] @relation("FromBank")
+  transfersTo   Transfer[] @relation("ToBank")
+  
+  @@unique([name])
+}
+
+// Источники дохода
+model IncomeSource {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  incomes     Income[]
+  
+  @@unique([name])
+}
+
+// Доходы
+model Income {
+  id          String   @id @default(cuid())
+  amount      Float
+  sourceId    String
+  source      IncomeSource @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  bankId      String
+  bank        Bank @relation(fields: [bankId], references: [id], onDelete: Cascade)
+  date        DateTime @default(now())
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// Расходы
+model Expense {
+  id          String   @id @default(cuid())
+  amount      Float
+  categoryId  String
+  category    Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  bankId      String
+  bank        Bank @relation(fields: [bankId], references: [id], onDelete: Cascade)
+  date        DateTime @default(now())
+  description String?
+  receiptQr   String?  // QR-код из чека
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// Депозиты
+model Deposit {
+  id              String   @id @default(cuid())
+  name            String
+  initialAmount   Float
+  interestRate    Float    // Процентная ставка годовых
+  termMonths      Int      // Срок в месяцах
+  startDate       DateTime @default(now())
+  capitalization  Boolean  @default(true) // Капитализация процентов
+  frequency       String   @default("monthly") // Частота начисления: monthly, quarterly, annually
+  status          String   @default("active") // active, completed, closed
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  transactions    DepositTransaction[]
+  autoAccrual     AutoAccrual?
+}
+
+// Транзакции по депозитам (начисления)
+model DepositTransaction {
+  id          String   @id @default(cuid())
+  depositId   String
+  deposit     Deposit  @relation(fields: [depositId], references: [id], onDelete: Cascade)
+  amount      Float    // Сумма начисления
+  type        String   // interest (проценты), principal (тело депозита)
+  date        DateTime @default(now())
+  description String?
+  createdAt   DateTime @default(now())
+}
+
+// Настройки автоматических начислений
+model AutoAccrual {
+  id              String   @id @default(cuid())
+  depositId       String
+  deposit         Deposit  @relation(fields: [depositId], references: [id], onDelete: Cascade)
+  isActive        Boolean  @default(true)
+  lastProcessed   DateTime?
+  nextProcessDate DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@unique([depositId])
+}
+
+// Переводы между банками
+model Transfer {
+  id          String   @id @default(cuid())
+  amount      Float
+  fromBankId  String
+  fromBank    Bank @relation("FromBank", fields: [fromBankId], references: [id], onDelete: Cascade)
+  toBankId    String
+  toBank      Bank @relation("ToBank", fields: [toBankId], references: [id], onDelete: Cascade)
+  date        DateTime @default(now())
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// Бюджеты
+model Budget {
+  id          String   @id @default(cuid())
+  categoryId  String?
+  category    Category? @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  amount      Float
+  period      String   @default("monthly") // monthly, weekly, yearly
+  startDate   DateTime @default(now())
+  endDate     DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
